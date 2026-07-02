@@ -4,20 +4,23 @@ export function renderList(items, listEl) {
   items.forEach(item => {
     const li = document.createElement("li");
 
+    li.setAttribute("draggable", "true");
+    li.dataset.id = item.id;
+
     if (item.checked) li.classList.add("done");
 
     li.innerHTML = `
-  <label class="checkbox">
-    <input type="checkbox" ${item.checked ? "checked" : ""} data-id="${item.id}" />
-    <span class="checkmark"></span>
-  </label>
+      <label class="checkbox">
+        <input type="checkbox" ${item.checked ? "checked" : ""} data-id="${item.id}" />
+        <span class="checkmark"></span>
+      </label>
 
-  <span class="text">${item.text}</span>
+      <span class="text">${item.text}</span>
 
-  <button class="delete" data-id="${item.id}" aria-label="Delete">
-    🗑
-  </button>
-`;
+      <button class="delete" data-id="${item.id}" aria-label="Delete">
+        🗑
+      </button>
+    `;
 
     listEl.appendChild(li);
   });

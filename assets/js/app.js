@@ -1,35 +1,40 @@
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
-
-// 1. Replace these:
-const SUPABASE_URL = "https://aewbvdmzfrsemvidppri.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFld2J2ZG16ZnJzZW12aWRwcHJpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5OTAyMDMsImV4cCI6MjA5ODU2NjIwM30.FNdVcufwqhZULz-c4fIH41U2Bvqw7zuV8f1pSqPAf24";
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+import { supabase } from "./supabase.js";
+import { renderList } from "./ui.js";
 
 let currentCategory = "groceries";
+let draggedId = null;
 let lastDeleted = null;
+let undoTimer = null;
 
 const listEl = document.getElementById("list");
 const input = document.getElementById("itemInput");
 const addBtn = document.getElementById("addBtn");
+const undoBar = document.getElementById("undoBar");
+const undoBtn = document.getElementById("undoBtn");
 
 // --------------------
 // Load items
 // --------------------
 async function loadItems() {
-  const { data, error } = await supabase
-    .from("groceries")
-    .select("*")
-    .eq("category", currentCategory)
-    .order("checked", { ascending: true })
-    .order("id", { ascending: true });
+  try {
+    const { data, error } = await supabase
+      .from("groceries")
+      .select("*")
+      .eq("category", currentCategory)
+      .order("checked", { ascending: true })
+      .order("id", { ascending: false });
 
-  if (error) {
-    console.error(error);
-    return;
+    if (error) {
+      console.error("Supabase error:", error);
+      return;
+    }
+
+    console.log("Loaded items:", data); // 👈 DEBUG LINE
+
+    renderList(data, listEl);
+  } catch (err) {
+    console.error("Fatal load error:", err);
   }
-
-  renderList(data, listEl);
 }
 
 // --------------------
@@ -40,112 +45,155 @@ async function addItem() {
   if (!text) return;
 
   await supabase.from("groceries").insert([
-  {
-    text,
-    category: currentCategory
-  }
-]);
+    {
+      text,
+      category: currentCategory,
+      checked: false
+    }
+  ]);
 
   input.value = "";
   loadItems();
 }
 
-<<<<<<< Updated upstream:script.js
-addBtn.addEventListener("click", addItem);
-=======
-// Enter key support
->>>>>>> Stashed changes:assets/js/app.js
+// --------------------
+// UNDO
+// --------------------
+function showUndo() {
+  undoBar.classList.remove("hidden");
+
+  // ❗ important: clear previous timer
+  if (undoTimer) clearTimeout(undoTimer);
+
+  undoTimer = setTimeout(() => {
+    hideUndo();
+  }, 5000);
+}
+
+function hideUndo() {
+  undoBar.classList.add("hidden");
+  lastDeleted = null;
+
+  if (undoTimer) {
+    clearTimeout(undoTimer);
+    undoTimer = null;
+  }
+}
 
 // --------------------
-// Click actions
-<<<<<<< Updated upstream:script.js
+// Events: add item
+// --------------------
+addBtn.addEventListener("click", addItem);
+
+input.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") addItem();
+});
+
+// --------------------
+// List interactions (event delegation)
+// --------------------
 listEl.addEventListener("click", async (e) => {
   const id = e.target.dataset.id;
-=======
-addBtn.addEventListener("click", addItem);
->>>>>>> Stashed changes:assets/js/app.js
 
-listEl.addEventListener("change", async (e) => {
-  li.classList.add("removing");
+  // DELETE
+  if (e.target.classList.contains("delete")) {
+    const id = e.target.dataset.id;
 
-  setTimeout(async () => {
     const { data } = await supabase
       .from("groceries")
-      .select("checked")
+      .select("*")
       .eq("id", id)
       .single();
 
-    await supabase
-      .from("groceries")
-      .update({ checked: !data.checked })
-      .eq("id", id);
+    lastDeleted = data;
 
-    loadItems();
-  }, 200);
-}
+    await supabase.from("groceries").delete().eq("id", id);
 
-if (e.target.classList.contains("delete")) {
-  const { data } = await supabase
-    .from("groceries")
-    .select("*")
-    .eq("id", id)
-    .single();
-
-  lastDeleted = data;
-
-  await supabase.from("groceries").delete().eq("id", id);
-  loadItems();
-
-  showUndo();
-}
-
-  
-
+    showUndo();
     loadItems();
   }
 });
 
+listEl.addEventListener("change", async (e) => {
+  if (e.target.type !== "checkbox") return;
+
+  const id = e.target.dataset.id;
+
+  const { data } = await supabase
+    .from("groceries")
+    .select("checked")
+    .eq("id", id)
+    .single();
+
+  await supabase
+    .from("groceries")
+    .update({ checked: !data.checked })
+    .eq("id", id);
+
+  loadItems();
+});
+
 
 // --------------------
-// UNDO logic
+// DRAG AND DROP
 // --------------------
-const undoBar = document.getElementById("undoBar");
-const undoBtn = document.getElementById("undoBtn");
+// listEl.addEventListener("dragstart", (e) => {
+//   draggedId = e.target.dataset.id;
+// });
 
-function showUndo() {
-  undoBar.classList.remove("hidden");
+// listEl.addEventListener("dragover", (e) => {
+//   e.preventDefault();
+// });
 
-  setTimeout(() => {
-    undoBar.classList.add("hidden");
-    lastDeleted = null;
-  }, 4000);
-}
+// listEl.addEventListener("drop", async (e) => {
+//   const targetId = e.target.closest("li")?.dataset.id;
+//   if (!targetId || targetId === draggedId) return;
+
+//   // simple swap strategy (works for MVP)
+//   const { data: dragged } = await supabase
+//     .from("groceries")
+//     .select("*")
+//     .eq("id", draggedId)
+//     .single();
+
+//   const { data: target } = await supabase
+//     .from("groceries")
+//     .select("*")
+//     .eq("id", targetId)
+//     .single();
+
+//   // swap a simple "position" field (we'll add it)
+// });
+
+
 
 undoBtn.addEventListener("click", async () => {
   if (!lastDeleted) return;
 
-  await supabase.from("groceries").insert([lastDeleted]);
+  const { id, ...rest } = lastDeleted;
+
+  await supabase.from("groceries").insert([rest]);
+
   lastDeleted = null;
 
-  undoBar.classList.add("hidden");
+  hideUndo();
   loadItems();
-
-  showUndo();
-}
-
-  
-
-    loadItems();
-  }
 });
 
 // --------------------
-// Enter key support
+// Tabs
 // --------------------
-input.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") {
-    addItem();
-  }
+document.querySelectorAll(".tab").forEach((tab) => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach((t) =>
+      t.classList.remove("active")
+    );
+
+    tab.classList.add("active");
+
+    currentCategory = tab.dataset.category;
+    loadItems();
+  });
 });
 
 // --------------------
@@ -160,23 +208,12 @@ supabase
   )
   .subscribe();
 
-// initial load
-<<<<<<< Updated upstream:script.js
+// --------------------
+// Init
+// --------------------
 loadItems();
-=======
-loadItems();
 
-document.querySelectorAll(".tab").forEach(tab => {
-  tab.addEventListener("click", () => {
-    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-    tab.classList.add("active");
-
-    currentCategory = tab.dataset.category;
-    loadItems();
-  });
-});
-
+// service worker
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("/service-worker.js");
 }
->>>>>>> Stashed changes:assets/js/app.js
