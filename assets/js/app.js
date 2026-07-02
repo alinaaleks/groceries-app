@@ -1,10 +1,5 @@
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
-
-// 1. Replace these:
-const SUPABASE_URL = "https://aewbvdmzfrsemvidppri.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFld2J2ZG16ZnJzZW12aWRwcHJpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5OTAyMDMsImV4cCI6MjA5ODU2NjIwM30.FNdVcufwqhZULz-c4fIH41U2Bvqw7zuV8f1pSqPAf24";
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+import { supabase } from "./supabase.js";
+import { renderList } from "./ui.js";
 
 const listEl = document.getElementById("list");
 const input = document.getElementById("itemInput");
@@ -25,26 +20,7 @@ async function loadItems() {
     return;
   }
 
-  render(data);
-}
-
-function render(items = []) {
-  listEl.innerHTML = "";
-
-  items.forEach(item => {
-    const li = document.createElement("li");
-    if (item.checked) li.classList.add("done");
-
-    li.innerHTML = `
-      <span>${item.text}</span>
-      <div class="actions">
-        <button data-id="${item.id}" class="toggle">✔</button>
-        <button data-id="${item.id}" class="delete">🗑</button>
-      </div>
-    `;
-
-    listEl.appendChild(li);
-  });
+  renderList(data, listEl);
 }
 
 // --------------------
@@ -55,15 +31,21 @@ async function addItem() {
   if (!text) return;
 
   await supabase.from("groceries").insert([{ text }]);
+
   input.value = "";
   loadItems();
 }
 
-addBtn.addEventListener("click", addItem);
-
 // --------------------
 // Click actions
 // --------------------
+addBtn.addEventListener("click", addItem);
+
+// Enter key support
+input.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") addItem();
+});
+
 listEl.addEventListener("click", async (e) => {
   const id = e.target.dataset.id;
 
@@ -88,15 +70,6 @@ listEl.addEventListener("click", async (e) => {
 });
 
 // --------------------
-// Enter key support
-// --------------------
-input.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") {
-    addItem();
-  }
-});
-
-// --------------------
 // Realtime sync
 // --------------------
 supabase
@@ -110,3 +83,7 @@ supabase
 
 // initial load
 loadItems();
+
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/service-worker.js");
+}
