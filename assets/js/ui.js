@@ -7,12 +7,17 @@ export function renderList(items, listEl) {
     if (item.checked) li.classList.add("done");
 
     li.innerHTML = `
-      <span>${item.text}</span>
-      <div class="actions">
-        <button data-id="${item.id}" class="toggle">✔</button>
-        <button data-id="${item.id}" class="delete">🗑</button>
-      </div>
-    `;
+  <label class="checkbox">
+    <input type="checkbox" ${item.checked ? "checked" : ""} data-id="${item.id}" />
+    <span class="checkmark"></span>
+  </label>
+
+  <span class="text">${item.text}</span>
+
+  <button class="delete" data-id="${item.id}" aria-label="Delete">
+    🗑
+  </button>
+`;
 
     listEl.appendChild(li);
   });
