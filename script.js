@@ -17,10 +17,11 @@ async function loadItems() {
   const { data, error } = await supabase
     .from("groceries")
     .select("*")
-    .order("id");
+    .order("checked", { ascending: true })
+    .order("id", { ascending: true });
 
   if (error) {
-    console.error("LOAD ERROR:", error);
+    console.error(error);
     return;
   }
 
@@ -49,14 +50,16 @@ function render(items = []) {
 // --------------------
 // Add item
 // --------------------
-addBtn.addEventListener("click", async () => {
+async function addItem() {
   const text = input.value.trim();
   if (!text) return;
 
   await supabase.from("groceries").insert([{ text }]);
   input.value = "";
   loadItems();
-});
+}
+
+addBtn.addEventListener("click", addItem);
 
 // --------------------
 // Click actions
@@ -82,6 +85,15 @@ listEl.addEventListener("click", async (e) => {
   }
 
   loadItems();
+});
+
+// --------------------
+// Enter key support
+// --------------------
+input.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    addItem();
+  }
 });
 
 // --------------------
