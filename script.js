@@ -6,6 +6,9 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
+let currentCategory = "groceries";
+let lastDeleted = null;
+
 const listEl = document.getElementById("list");
 const input = document.getElementById("itemInput");
 const addBtn = document.getElementById("addBtn");
@@ -17,6 +20,7 @@ async function loadItems() {
   const { data, error } = await supabase
     .from("groceries")
     .select("*")
+    .eq("category", currentCategory)
     .order("checked", { ascending: true })
     .order("id", { ascending: true });
 
@@ -54,20 +58,50 @@ async function addItem() {
   const text = input.value.trim();
   if (!text) return;
 
+<<<<<<< Updated upstream:script.js
   await supabase.from("groceries").insert([{ text }]);
+=======
+  await supabase.from("groceries").insert([
+  {
+    text,
+    category: currentCategory
+  }
+]);
+
+>>>>>>> Stashed changes:assets/js/app.js
   input.value = "";
   loadItems();
 }
 
+<<<<<<< Updated upstream:script.js
 addBtn.addEventListener("click", addItem);
+=======
+// Enter key support
+input.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") addItem();
+});
+>>>>>>> Stashed changes:assets/js/app.js
 
 // --------------------
 // Click actions
 // --------------------
+<<<<<<< Updated upstream:script.js
 listEl.addEventListener("click", async (e) => {
   const id = e.target.dataset.id;
+=======
+addBtn.addEventListener("click", addItem);
+>>>>>>> Stashed changes:assets/js/app.js
 
-  if (e.target.classList.contains("toggle")) {
+listEl.addEventListener("change", async (e) => {
+  if (e.target.type === "checkbox") {
+    const id = e.target.dataset.id;
+
+const li = e.target.closest("li");
+
+if (e.target.classList.contains("toggle")) {
+  li.classList.add("removing");
+
+  setTimeout(async () => {
     const { data } = await supabase
       .from("groceries")
       .select("checked")
@@ -78,12 +112,55 @@ listEl.addEventListener("click", async (e) => {
       .from("groceries")
       .update({ checked: !data.checked })
       .eq("id", id);
-  }
 
-  if (e.target.classList.contains("delete")) {
-    await supabase.from("groceries").delete().eq("id", id);
-  }
+    loadItems();
+  }, 200);
+}
 
+if (e.target.classList.contains("delete")) {
+  const { data } = await supabase
+    .from("groceries")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  lastDeleted = data;
+
+  await supabase.from("groceries").delete().eq("id", id);
+  loadItems();
+
+  showUndo();
+}
+
+  
+
+    loadItems();
+  }
+});
+
+
+// --------------------
+// UNDO logic
+// --------------------
+const undoBar = document.getElementById("undoBar");
+const undoBtn = document.getElementById("undoBtn");
+
+function showUndo() {
+  undoBar.classList.remove("hidden");
+
+  setTimeout(() => {
+    undoBar.classList.add("hidden");
+    lastDeleted = null;
+  }, 4000);
+}
+
+undoBtn.addEventListener("click", async () => {
+  if (!lastDeleted) return;
+
+  await supabase.from("groceries").insert([lastDeleted]);
+  lastDeleted = null;
+
+  undoBar.classList.add("hidden");
   loadItems();
 });
 
@@ -109,4 +186,22 @@ supabase
   .subscribe();
 
 // initial load
+<<<<<<< Updated upstream:script.js
 loadItems();
+=======
+loadItems();
+
+document.querySelectorAll(".tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    tab.classList.add("active");
+
+    currentCategory = tab.dataset.category;
+    loadItems();
+  });
+});
+
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/service-worker.js");
+}
+>>>>>>> Stashed changes:assets/js/app.js

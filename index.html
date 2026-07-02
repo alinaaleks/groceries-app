@@ -8,7 +8,16 @@
 </head>
 <body>
   <div class="app">
-    <h1>🛒 Покупки</h1>
+    <h1 class="title">
+      <img src="assets/icons/cart.png" class="title-icon" />
+        Покупки
+    </h1>
+
+    <div class="tabs">
+  <button class="tab active" data-category="groceries">Покупки</button>
+  <button class="tab" data-category="electronics">Электроника</button>
+  <button class="tab" data-category="other">Другое</button>
+</div>
 
     <div class="input-row">
       <input id="itemInput" placeholder="Add item..." />
@@ -18,6 +27,15 @@
     <ul id="list"></ul>
   </div>
 
+<<<<<<< Updated upstream
   <script type="module" src="script.js"></script>
+=======
+  <div id="undoBar" class="undo hidden">
+  Item deleted
+  <button id="undoBtn">Undo</button>
+</div>
+
+  <script type="module" src="assets/js/app.js"></script>
+>>>>>>> Stashed changes
 </body>
 </html>
